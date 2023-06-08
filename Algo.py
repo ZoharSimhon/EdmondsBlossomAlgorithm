@@ -184,10 +184,17 @@ def findAugmentingPath(G, root):
 
     print(q)
 
+def invertPath(G, path):
+    for i in range(0, len(path), 2):
+        G.nodes[path[i]]['matchedWith'] = path[i+1]
+        G.nodes[path[i+1]]['matchedWith'] = path[i]
 
 def findMaximumMatching(G):
     while G.graph['unmatchedNodes']:
         for unmatchedNode in G.graph['unmatchedNodes']:
             path = findAugmentingPath(G, unmatchedNode)
-
+            invertPath(G, path)
+            G.graph['unmatchedNodes'].remove(path[0])
+            G.graph['unmatchedNodes'].remove(path[-1])
+            break
         # G.graph['unmatchedNodes'].remove()
