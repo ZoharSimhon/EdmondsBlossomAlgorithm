@@ -1,18 +1,21 @@
+# import random
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import deque
+import numpy as np
 
 
 def createGraph(nodesNX, edgesNX):
     # add all the nodes to unmatched nodes list
     G = nx.Graph(unmatchedNodes=nodesNX, superNodes=[])
-    G.add_nodes_from(nodesNX)
+    G.add_nodes_from(nodesNX, matchedWith=None)
     G.add_edges_from(edgesNX)
-
     return G
 
 
 def showGraph(G):
+    # random.seed(100)
+    np.random.seed(100)
     # define an array of the edges colors
     # edge_colors = [G.edges[edge]['color'] for edge in G.edges]
 
@@ -21,17 +24,20 @@ def showGraph(G):
     #    ['isMatched'] else 'lightblue' for node in G.nodes]
 
     # drawing the graph
-    # nx.draw_networkx(G, with_labels=True,
-    #  node_color=node_colors, edge_color=edge_colors, arrows=True)
-    nx.draw(G)
+    node_colors = ["lightblue" if node in G.graph['unmatchedNodes'] else "lightcoral" for node in G.nodes]
+    edge_colors = ["lightcoral" if G.nodes[u]['matchedWith']==v and G.nodes[v]['matchedWith']==u else "lightblue" for (u,v) in G.edges ]
+    node_colors[G.graph['current']] = "limegreen"
+    plt.clf()
+    nx.draw_networkx(G, node_color=node_colors,
+                    edge_color=edge_colors, with_labels=True)
+    # nx.draw(G)
     # setting the plot to non-blocking so we can update the graph with the algorithm
-    # plt.ion()
-
+    plt.ion()
     # show the graph in a pop-up window
     plt.show()
 
     # wait before continuing to the next iteration
-    # plt.pause(2)
+    plt.pause(2)
 
 
 # def findFreeNode(G):
@@ -63,7 +69,7 @@ def findCycle(G, node1, node2):
 
 
 def shrinkBlossom(G, blossom):
-    superNode = nx.Graph(original=[])
+    superNode = nx.Graph(original=[],sub=[])
     G.add_node(superNode)
     G.graph['superNodes'].append(superNode)
 
@@ -76,6 +82,7 @@ def shrinkBlossom(G, blossom):
     superNode.add_edge((blossom[-1], blossom[0]))
 
     for node in blossom:
+        superNode.graph['sub'].append(node)
         for neighbor in G.neighbors(node):
             if neighbor not in blossom:
                 superNode.graph['original'].append((node, neighbor))
@@ -84,12 +91,15 @@ def shrinkBlossom(G, blossom):
                 if G.nodes[neighbor]['parent'] in blossom:
                     G.nodes[neighbor]['parent'] = superNode
 
+    print(G.number_of_nodes())
     G.remove_nodes_from(blossom)
+    print(G.number_of_nodes())
 
     return superNode
 
 
 def expandSupernode(G, superNode):
+    showGraph(G)
     for node in superNode.nodes:
         G.add_node(node, parent=G.nodes[node]['parent'],
                    visited=G.nodes[node]['visited'])
@@ -100,7 +110,7 @@ def expandSupernode(G, superNode):
     G.remove_node(superNode)
 
 
-def replacePath(G, path, superNode, cycle):
+def replacePath(G, path, superNode):
     index = path.index(superNode)
     nodes = path[:index]
     cur_node = nodes[-1]
@@ -116,7 +126,7 @@ def replacePath(G, path, superNode, cycle):
         nodes.append(G.nodes[cur_node]['mate'])
         neighbor = G.nodes[cur_node]['matchedWith']
         for node in G.neighbors(neighbor):
-            if node != cur_node and node in cycle:
+            if node != cur_node and node in superNode.graph['sub']:
                 cur_node = node
                 break
         # else:
@@ -125,7 +135,7 @@ def replacePath(G, path, superNode, cycle):
     path = nodes + path[index+1:]
 
 
-def constructAugmentingPath(G, node, cycle):
+def constructAugmentingPath(G, node):
     path = []
     path.append(node)
     node = G.nodes[node]['parent']
@@ -137,7 +147,7 @@ def constructAugmentingPath(G, node, cycle):
     while G.graph['superNodes']:
         superNode = G.graph['superNodes'].pop()
         expandSupernode(G, superNode)
-        replacePath(G, path, superNode, cycle)
+        replacePath(G, path, superNode)
 
     while G.nodes[path[0]]['matchedWith']:
         path.insert(G.nodes[path[0]]['parent'], 0)
@@ -156,11 +166,13 @@ def findAugmentingPath(G, root):
     q.append(root)
     while q:
         current = q.popleft()
+        G.graph['current'] = current
+        showGraph(G)
         G.nodes[current]['visited'] = True
         for node in G.neighbors(current):
+            print(G.nodes[node])
             if node == G.nodes[current]['parent']:
                 continue
-
             elif G.nodes[node]['visited']:
                 cycle = findCycle(G, node, current)
                 if len(cycle) % 2 == 1:
@@ -180,7 +192,7 @@ def findAugmentingPath(G, root):
 
             elif G.nodes[node]['matchedWith'] == None:
                 G.nodes[node]['parent'] = current
-                return constructAugmentingPath(G, node, cycle)
+                return constructAugmentingPath(G, node)
 
     print(q)
 
@@ -197,4 +209,5 @@ def findMaximumMatching(G):
             G.graph['unmatchedNodes'].remove(path[0])
             G.graph['unmatchedNodes'].remove(path[-1])
             break
+        showGraph(G)
         # G.graph['unmatchedNodes'].remove()
