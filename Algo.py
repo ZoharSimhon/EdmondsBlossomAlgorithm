@@ -63,7 +63,7 @@ def findCycle(G, node1, node2):
 
 
 def shrinkBlossom(G, blossom):
-    superNode = nx.Graph()
+    superNode = nx.Graph(original=[])
     G.add_node(superNode)
     G.graph['superNodes'].append(superNode)
 
@@ -78,6 +78,7 @@ def shrinkBlossom(G, blossom):
     for node in blossom:
         for neighbor in G.neighbors(node):
             if neighbor not in blossom:
+                superNode.graph['original'].append((node, neighbor))
                 G.add_edge((superNode, neighbor))
                 superNode.nodes[node]['neighbors'].append(neighbor)
                 if G.nodes[neighbor]['parent'] in blossom:
@@ -88,7 +89,7 @@ def shrinkBlossom(G, blossom):
     return superNode
 
 
-def expand_supernode(G, superNode):
+def expandSupernode(G, superNode):
     for node in superNode.nodes:
         G.add_node(node, parent=G.nodes[node]['parent'],
                    visited=G.nodes[node]['visited'])
@@ -99,7 +100,32 @@ def expand_supernode(G, superNode):
     G.remove_node(superNode)
 
 
-def construct_augmenting_path(G, node):
+def replacePath(G, path, superNode, cycle):
+    index = path.index(superNode)
+    nodes = path[:index]
+    cur_node = nodes[-1]
+    for edge in superNode.graph['original']:
+        if edge[0] == cur_node:
+            cur_node = edge[1]
+            break
+        if edge[1] == cur_node:
+            cur_node = edge[0]
+            break
+    while G.nodes[cur_node]['parent'] != superNode.graph['parent']:
+        nodes.append(cur_node)
+        nodes.append(G.nodes[cur_node]['mate'])
+        neighbor = G.nodes[cur_node]['matchedWith']
+        for node in G.neighbors(neighbor):
+            if node != cur_node and node in cycle:
+                cur_node = node
+                break
+        # else:
+            # raise Exception("replace error.")
+    nodes.append(cur_node)
+    path = nodes + path[index+1:]
+
+
+def constructAugmentingPath(G, node, cycle):
     path = []
     path.append(node)
     node = G.nodes[node]['parent']
@@ -110,14 +136,14 @@ def construct_augmenting_path(G, node):
 
     while G.graph['superNodes']:
         superNode = G.graph['superNodes'].pop()
-        expand_supernode(G, superNode)
-        path.replace(snode)
+        expandSupernode(G, superNode)
+        replacePath(G, path, superNode, cycle)
 
-    while path.nodes[0].mate != None:
-        path.nodes.insert(path.nodes[0].parent, 0)
+    while G.nodes[path[0]]['matchedWith']:
+        path.insert(G.nodes[path[0]]['parent'], 0)
 
-    while path.nodes[-1].mate != None:
-        path.nodes.append(path.nodes[-1].parent)
+    while G.nodes[path[-1]]['matchedWith']:
+        path.append(G.nodes[path[-1]]['parent'])
 
     return path
 
@@ -147,12 +173,14 @@ def findAugmentingPath(G, root):
                         node = G.nodes[node]['parent']
                     G.nodes[superNode]['parent'] = G.nodes[node]['parent']
                     G.nodes[superNode]['matchedWith'] = G.nodes[node]['matchedWith']
+                    superNode.graph['parent'] = G.nodes[node]['parent']
+                    superNode.graph['matchedWith'] = G.nodes[node]['matchedWith']
                     q.appendleft(superNode)
                     break
 
             elif G.nodes[node]['matchedWith'] == None:
                 G.nodes[node]['parent'] = current
-                return construct_augmenting_path(G, node)
+                return constructAugmentingPath(G, node, cycle)
 
     print(q)
 
