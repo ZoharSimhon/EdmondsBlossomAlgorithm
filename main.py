@@ -29,15 +29,19 @@ nodes[5].neighbors.append(nodes[4])
 # showGraph(G)
 # findMaximumMatching(G)
 
-G = nx.Graph()
+G = nx.Graph(SuperNodes=[])
 G.add_nodes_from(nodesNX, free=True)
 G.add_edges_from(edgesNX)
 K3 = nx.Graph([(0, 1), (1, 2), (2, 0)])
 for node in G.nodes:
     K3.add_node(node,free=G.nodes[node]['free'])
+G.remove_nodes_from([0,1])
+print(G.edges)
+# G.remove_edge_from((0,1))
 # G.add_node(K3.nodes)
-for node in K3.nodes:
-    print(K3.nodes[node])
+# print(G.graph)
+# for node in K3.nodes:
+    # print(K3.nodes[node])
 # showGraph(G)
 
 
