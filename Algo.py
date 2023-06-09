@@ -8,37 +8,47 @@ import numpy as np
 def createGraph(nodesNX, edgesNX):
     # add all the nodes to unmatched nodes list
     G = nx.Graph(unmatchedNodes=nodesNX, superNodes=[])
-    G.add_nodes_from(nodesNX, matchedWith=None, parent=None)
+    G.add_nodes_from(nodesNX, matchedWith=None, parent=None,visible=True)
     G.add_edges_from(edgesNX)
     return G
 
 
 def showGraph(G):
-    # random.seed(100)
+    # for node in G.nodes:
+    #     print(node, G.nodes[node])
+    nodes = []
+    for node in G.nodes:
+        if G.nodes[node]['visible']:
+            nodes.append(node)
+    edges = []
+    for (u,v) in G.edges:
+        if G.nodes[u]['visible'] and G.nodes[v]['visible']:
+            edges.append((u,v))
+    subgraph = G.subgraph(nodes)
     np.random.seed(100)
-    # define an array of the edges colors
-    # edge_colors = [G.edges[edge]['color'] for edge in G.edges]
-
-    # define an array of the vertices colors - decide the color in accordance to whether the node is matched or not
-    # node_colors = ['lightcoral' if G.nodes[node]
-    #    ['isMatched'] else 'lightblue' for node in G.nodes]
-
-    # drawing the graph
-    node_colors = ["lightblue" if node in G.graph['unmatchedNodes'] else "lightcoral" for node in G.nodes]
-    edge_colors = ["lightcoral" if G.nodes[u]['matchedWith']==v and G.nodes[v]['matchedWith']==u else "lightblue" for (u,v) in G.edges ]
-    node_colors[list(G.nodes).index(G.graph['current'])] = "limegreen"
-    node_colors[G.graph['checked']] = "crimson"
+    node_colors = ["lightblue" if node in G.graph['unmatchedNodes'] else "lightcoral" for node in nodes]
+    edge_colors = ["lightcoral" if G.nodes[u]['matchedWith']==v and G.nodes[v]['matchedWith']==u else "lightblue" for (u,v) in edges ]
+    if G.graph['current'] in nodes:
+        node_colors[nodes.index(G.graph['current'])] = "limegreen"
+    if G.graph['checked'] in nodes:
+        node_colors[nodes.index(G.graph['checked'])] = "crimson"
+    
     plt.clf()
-    nx.draw_networkx(G, node_color=node_colors,
+    nx.draw_networkx(subgraph, node_color=node_colors,
                     edge_color=edge_colors, with_labels=True)
-    # nx.draw(G)
-    # setting the plot to non-blocking so we can update the graph with the algorithm
     plt.ion()
-    # show the graph in a pop-up window
     plt.show()
+    plt.pause(1.5)
 
-    # wait before continuing to the next iteration
-    plt.pause(2)
+    np.random.seed(100)
+    node_colors = ["lightblue" if node in G.graph['unmatchedNodes'] else "lightcoral" for node in nodes]
+    edge_colors = ["lightcoral" if G.nodes[u]['matchedWith']==v and G.nodes[v]['matchedWith']==u else "lightblue" for (u,v) in edges ]
+    plt.clf()
+    nx.draw_networkx(subgraph, node_color=node_colors,
+                    edge_color=edge_colors, with_labels=True)
+    plt.ion()
+    plt.show()
+    plt.pause(1.5)
 
 
 # def findFreeNode(G):
@@ -71,45 +81,33 @@ def findCycle(G, node1, node2):
 
 def shrinkBlossom(G, blossom):
     superNodeName = "s" + str(len(G.graph['superNodes']))
-    G.add_node(superNodeName,original=[],sub=[],parent=None)
+    G.add_node(superNodeName,original=[],sub=[],parent=None,visible=True)
     G.graph['superNodes'].append(superNodeName)
-
-    # superNode.add_node(blossom[0], parent=G.nodes[blossom[0]]['parent'],
-    #                    visited=G.nodes[blossom[0]]['visited'], neighbors=[blossom[-1]])
-    # for i in range(1, len(blossom)):
-    #     superNode.add_node(blossom[i], parent=G.nodes[blossom[i]]['parent'],
-    #                        visited=G.nodes[blossom[i]]['visited'], neighbors=[blossom[i-1]])
-    #     superNode.add_edge(blossom[i-1], blossom[i])
-    # superNode.add_edge(blossom[-1], blossom[0])
-
+    
     for node in blossom:
         G.nodes[superNodeName]['sub'].append(node)
+        G.nodes[node]['visible'] = False
         for neighbor in G.neighbors(node):
             if neighbor not in blossom:
                 G.nodes[superNodeName]['original'].append((node, neighbor))
                 if G.nodes[neighbor]['parent'] in blossom:
                     G.nodes[neighbor]['parent'] = superNodeName
 
-        for (node1, node2) in G.nodes[superNodeName]['original']:
-            G.remove_edge(node1,node2)
-            G.add_edge(superNodeName, node2)
-
+    for (node1, node2) in G.nodes[superNodeName]['original']:
+        G.remove_edge(node1,node2)
+        G.add_edge(superNodeName, node2)
+    
     return superNodeName
 
 
 def expandSupernode(G, superNodeName):
+    G.nodes[superNodeName]['visible'] = False
     for (node1, node2) in G.nodes[superNodeName]['original']:
         G.add_edge(node1,node2)
         G.remove_edge(superNodeName,node2)
-    # showGraph(G)
-    # for node in superNode.nodes:
-    #     G.add_node(node, parent=G.nodes[node]['parent'],
-    #                visited=G.nodes[node]['visited'])
-    # for node in superNode.nodes:
-    #     for neighbor in superNode.nodes[node]['neighbors']:
-    #         G.add_edge(node, neighbor)
-
-    # G.remove_node(superNode)
+    for node in G.nodes[superNodeName]['sub']:
+        G.nodes[node]['visible'] = True
+        
 
 
 def replacePath(G, path, superNode):
@@ -182,6 +180,7 @@ def findAugmentingPath(G, root):
             
             elif G.nodes[node]['visited']:
                 cycle = findCycle(G, node, current)
+                print(cycle)
                 if len(cycle) % 2 == 1:
                     superNode = shrinkBlossom(G, cycle)
                     for v in cycle:
@@ -225,6 +224,12 @@ def findMaximumMatching(G):
                 G.graph['unmatchedNodes'].remove(path[-1])
                 break
             except Exception as e:
+                while G.graph['superNodes']:
+                    s = G.graph['superNodes'].pop()
+                    expandSupernode(G,s)
+                showGraph(G)
+                showGraph(G)
+                showGraph(G)
                 print(e)
                 return
         showGraph(G)
