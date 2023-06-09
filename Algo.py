@@ -48,7 +48,7 @@ def showGraph(G):
 #     return -1
 
 
-def find_ancestors(G, node):
+def findAncestors(G, node):
     ancestors = [node]
     while G.nodes[node]['parent'] != None:
         node = G.nodes[node]['parent']
@@ -57,8 +57,8 @@ def find_ancestors(G, node):
 
 
 def findCycle(G, node1, node2):
-    ancestors1 = find_ancestors(G, node1)
-    ancestors2 = find_ancestors(G, node2)
+    ancestors1 = findAncestors(G, node1)
+    ancestors2 = findAncestors(G, node2)
     i = len(ancestors1) - 1
     j = len(ancestors2) - 1
     while ancestors1[i] == ancestors2[j]:
@@ -73,7 +73,6 @@ def shrinkBlossom(G, blossom):
     superNodeName = "s" + str(len(G.graph['superNodes']))
     G.add_node(superNodeName,original=[],sub=[],parent=None)
     G.graph['superNodes'].append(superNodeName)
-    G.graph['unmatchedNodes'].append(superNodeName)
 
     # superNode.add_node(blossom[0], parent=G.nodes[blossom[0]]['parent'],
     #                    visited=G.nodes[blossom[0]]['visited'], neighbors=[blossom[-1]])
@@ -136,6 +135,7 @@ def replacePath(G, path, superNode):
             # raise Exception("replace error.")
     nodes.append(cur_node)
     path = nodes + path[index+1:]
+    return path
 
 
 def constructAugmentingPath(G, node):
@@ -150,7 +150,9 @@ def constructAugmentingPath(G, node):
     while G.graph['superNodes']:
         superNode = G.graph['superNodes'].pop()
         expandSupernode(G, superNode)
-        replacePath(G, path, superNode)
+        print("before: ",path)
+        path = replacePath(G, path, superNode)
+        print("after: ",path)
 
     while G.nodes[path[0]]['matchedWith']:
         path.insert(G.nodes[path[0]]['parent'], 0)
@@ -167,6 +169,7 @@ def findAugmentingPath(G, root):
         G.nodes[node]['parent'] = None
     q = deque()
     q.append(root)
+    print("root: ",root)
     while q:
         current = q.popleft()
         G.graph['current'] = current
@@ -185,10 +188,6 @@ def findAugmentingPath(G, root):
                         if v in q:
                             q.remove(v)
                     G.nodes[superNode]['visited'] = True
-                    # for n in cycle:
-                    #     if not G.nodes[n]['parent']: 
-                    #         break
-                    #     node = G.nodes[n]['parent']
                     while G.nodes[node]['parent'] in cycle:
                         node = G.nodes[node]['parent']
                     G.nodes[superNode]['parent'] = G.nodes[node]['parent']
@@ -207,9 +206,11 @@ def findAugmentingPath(G, root):
                     G.nodes[G.nodes[node]['matchedWith']]['parent'] = node
                     q.append(G.nodes[node]['matchedWith'])
 
-    print(q)
+        if not q:
+            raise Exception('cannot find an augmenting path')
 
 def invertPath(G, path):
+    print(path)
     for i in range(0, len(path), 2):
         G.nodes[path[i]]['matchedWith'] = path[i+1]
         G.nodes[path[i+1]]['matchedWith'] = path[i]
@@ -217,12 +218,14 @@ def invertPath(G, path):
 def findMaximumMatching(G):
     while G.graph['unmatchedNodes']:
         for unmatchedNode in G.graph['unmatchedNodes']:
-            path = findAugmentingPath(G, unmatchedNode)
-            invertPath(G, path)
-            print("unmatchedNodes: ", G.graph['unmatchedNodes'])
-            print("path: ", path)
-            G.graph['unmatchedNodes'].remove(path[0])
-            G.graph['unmatchedNodes'].remove(path[-1])
-            break
+            try:
+                path = findAugmentingPath(G, unmatchedNode)
+                invertPath(G, path)
+                G.graph['unmatchedNodes'].remove(path[0])
+                G.graph['unmatchedNodes'].remove(path[-1])
+                break
+            except Exception as e:
+                print(e)
+                return
         showGraph(G)
         # G.graph['unmatchedNodes'].remove()
