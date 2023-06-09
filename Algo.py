@@ -14,8 +14,6 @@ def createGraph(nodesNX, edgesNX):
 
 
 def showGraph(G):
-    # for node in G.nodes:
-    #     print(node, G.nodes[node])
     nodes = []
     for node in G.nodes:
         if G.nodes[node]['visible']:
@@ -148,9 +146,7 @@ def constructAugmentingPath(G, node):
     while G.graph['superNodes']:
         superNode = G.graph['superNodes'].pop()
         expandSupernode(G, superNode)
-        print("before: ",path)
         path = replacePath(G, path, superNode)
-        print("after: ",path)
 
     while G.nodes[path[0]]['matchedWith']:
         path.insert(G.nodes[path[0]]['parent'], 0)
@@ -167,7 +163,7 @@ def findAugmentingPath(G, root):
         G.nodes[node]['parent'] = None
     q = deque()
     q.append(root)
-    print("root: ",root)
+    print("BFS root: ",root)
     while q:
         current = q.popleft()
         G.graph['current'] = current
@@ -180,7 +176,6 @@ def findAugmentingPath(G, root):
             
             elif G.nodes[node]['visited']:
                 cycle = findCycle(G, node, current)
-                print(cycle)
                 if len(cycle) % 2 == 1:
                     superNode = shrinkBlossom(G, cycle)
                     for v in cycle:
