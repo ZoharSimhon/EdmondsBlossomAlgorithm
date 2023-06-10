@@ -1,4 +1,3 @@
-# import random
 import networkx as nx
 import matplotlib.pyplot as plt
 from collections import deque
@@ -47,13 +46,6 @@ def showGraph(G):
     plt.ion()
     plt.show()
     plt.pause(1.5)
-
-
-# def findFreeNode(G):
-#     for node in G.nodes:
-#         if G.nodes[node]['free']:
-#             return node
-#     return -1
 
 
 def findAncestors(G, node):
@@ -209,6 +201,7 @@ def invertPath(G, path):
         G.nodes[path[i]]['matchedWith'] = path[i+1]
         G.nodes[path[i+1]]['matchedWith'] = path[i]
 
+
 def findMaximumMatching(G):
     while G.graph['unmatchedNodes']:
         for unmatchedNode in G.graph['unmatchedNodes']:
@@ -228,4 +221,4 @@ def findMaximumMatching(G):
                 print(e)
                 return
         showGraph(G)
-        # G.graph['unmatchedNodes'].remove()
+    showGraph(G)

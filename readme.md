@@ -1,4 +1,4 @@
-# Blossom-Edmond Algorithm
+# Part A - Blossom-Edmond Algorithm
 
 This repository contains a Python implementation of the Blossom-Edmond algorithm, a graph algorithm used for finding maximum weighted matching in general graphs.
 
@@ -62,4 +62,22 @@ If you are interested in learning more about the Blossom-Edmond algorithm and it
 - Harold N. Gabow's lecture notes on [Matching and Matroids](http://www.cs.colorado.edu/~hal/ga77/notes.pdf).
 - Wikipedia page on [Blossom algorithm](https://en.wikipedia.org/wiki/Blossom_algorithm).
 
+---
+
+# Part B - Gallai's Algorithm
+
+## Overview
+The Gallai's algorithm for finding the minimum line-cover for undirected graphs without isolated vertices, is extracted from Gallai's theorem, which means that for any graph G without isolated vertices, the minimum line-cover of G plus the maximum matching of G equals to the number of vertices of G.  In Part A the program finds the maximum matching of G, then in this part the program computes the minimum line-cover using the following procedure:  
+1.   let U = vertices that are not in the matching M  
+1. let S = edges that connect vertices from U to the vertices in the matching  
+1.  let S + M be the minimum line-cover
+1. verify visually that indeed all the vertices are covered by the line-cover 
+1. verify mathematically that Gallai's theorem indeed holds  
+
+## Usage
+Same as Part A, the main.py program finds the perfect matching using Edmonds-Blossom, then finds minimum line-cover using Gallai's algorithm
+ 
+## References 
+- Elad Horev's booklet about OPTIMISATION & ALGORITHMS   
+https://drive.google.com/file/d/14jpnfDevf-291jl7xOiASz3I64bdbJoo/view
 ---
